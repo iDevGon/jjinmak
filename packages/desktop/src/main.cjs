@@ -5,6 +5,9 @@ const { Controller } = require('@jjinmak/core/controller');
 const { LcuClient, discoverCredentials } = require('@jjinmak/core/lcu');
 const { interceptWindowClose } = require('./window-policy.cjs');
 
+// Electron 44 reliably supports PNG/JPEG data URLs for nativeImage.
+const TRAY_ICON_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAN0lEQVR4nGNgoCX48PXzfxAeNYDKBlBkIM1cRZLJtDMAJkmMAeSZTqwrYYpwYUIuxGkQ0RpJBQAFVaUeP1CEGQAAAABJRU5ErkJggg==';
+
 function startDesktop({ platform, actions, discoverProcesses }) {
 app.setName('찐막');
 const demo = process.argv.includes('--demo');
@@ -35,20 +38,27 @@ function showWindow() {
   window.focus();
 }
 function createTrayImage() {
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M8 1v6M4.46 3.46a6 6 0 1 0 7.08 0" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round"/></svg>';
-  const image = nativeImage.createFromDataURL(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+  const image = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL);
   if (platform === 'darwin') image.setTemplateImage(true);
   return image;
 }
 function createTray() {
-  tray = new Tray(createTrayImage());
-  tray.setToolTip('찐막');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: '찐막 열기', click: showWindow },
-    { type: 'separator' },
-    { label: '앱 종료', click: () => { quitting = true; app.quit(); } },
-  ]));
-  tray.on('click', showWindow);
+  try {
+    const createdTray = new Tray(createTrayImage());
+    createdTray.setToolTip('찐막');
+    createdTray.setContextMenu(Menu.buildFromTemplate([
+      { label: '찐막 열기', click: showWindow },
+      { type: 'separator' },
+      { label: '앱 종료', click: () => { quitting = true; app.quit(); } },
+    ]));
+    createdTray.on('click', showWindow);
+    tray = createdTray;
+    return createdTray;
+  } catch (error) {
+    tray = null;
+    console.error(`트레이를 만들지 못했습니다: ${error.message}`);
+    return null;
+  }
 }
 function sendState() {
   if (!window || window.isDestroyed()) return;
