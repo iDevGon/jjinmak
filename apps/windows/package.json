@@ -1,9 +1,9 @@
 {
   "name": "@jjinmak/windows",
   "productName": "찐막",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "main": "main.cjs",
   "scripts": { "start": "electron .", "demo": "electron . --demo" },
-  "dependencies": { "@jjinmak/core": "0.1.0", "@jjinmak/desktop": "0.1.0" }
+  "dependencies": { "@jjinmak/core": "0.2.0", "@jjinmak/desktop": "0.2.0" }
 }
