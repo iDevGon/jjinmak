@@ -1,7 +1,7 @@
 {
   "name": "jjinmak",
   "productName": "찐막",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "찐막 macOS / Windows 모노레포",
   "workspaces": ["apps/*", "packages/*"],
