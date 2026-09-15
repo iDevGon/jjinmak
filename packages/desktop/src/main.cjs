@@ -7,6 +7,8 @@ const { interceptWindowClose } = require('./window-policy.cjs');
 
 // Electron 44 reliably supports PNG/JPEG data URLs for nativeImage.
 const TRAY_ICON_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAN0lEQVR4nGNgoCX48PXzfxAeNYDKBlBkIM1cRZLJtDMAJkmMAeSZTqwrYYpwYUIuxGkQ0RpJBQAFVaUeP1CEGQAAAABJRU5ErkJggg==';
+// Retina displays use the 32x32 PNG representation at a 2x scale factor.
+const TRAY_ICON_2X_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAa0lEQVR4nO3QOwrAIBAEUO9/WiGkjqSwSaPOh2wxA1ays49tLSHS7+t5XwABBBBAaYAVuSqf/79eqhSgBKI+wKENAAYoEFCfCwANMQiqRw2ghpECyRW/JtFyMxx4cmjlrMIyXIEIl+cODMAACws5hOthJ4AAAAASUVORK5CYII=';
 
 function startDesktop({ platform, actions, discoverProcesses }) {
 app.setName('찐막');
@@ -39,12 +41,14 @@ function showWindow() {
 }
 function createTrayImage() {
   const image = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL);
+  image.addRepresentation({ scaleFactor: 2, dataURL: TRAY_ICON_2X_DATA_URL });
   if (platform === 'darwin') image.setTemplateImage(true);
   return image;
 }
 function createTray() {
+  let createdTray;
   try {
-    const createdTray = new Tray(createTrayImage());
+    createdTray = new Tray(createTrayImage());
     createdTray.setToolTip('찐막');
     createdTray.setContextMenu(Menu.buildFromTemplate([
       { label: '찐막 열기', click: showWindow },
@@ -55,6 +59,11 @@ function createTray() {
     tray = createdTray;
     return createdTray;
   } catch (error) {
+    if (createdTray) {
+      try {
+        createdTray.destroy();
+      } catch {}
+    }
     tray = null;
     console.error(`트레이를 만들지 못했습니다: ${error.message}`);
     return null;
