@@ -34,6 +34,13 @@ async function waitForWindowVisibility(app, expected, timeoutMs) {
     assert.equal(state.platform, target === 'macos' ? 'darwin' : 'win32');
     assert.equal(state.demo, true);
     assert.equal(await app.evaluate(({ app }) => app.__jjinmakTrayReady), true);
+    assert.equal(state.startupEnabled, false);
+    await page.locator('#startup').check();
+    await page.waitForFunction(async () => (await window.jjinmak.getState()).startupEnabled === true);
+    assert.equal(await page.locator('#startup').isChecked(), true);
+    await page.locator('#startup').uncheck();
+    await page.waitForFunction(async () => (await window.jjinmak.getState()).startupEnabled === false);
+    assert.equal(await page.locator('#startup').isChecked(), false);
     const dir = path.join(__dirname, '../.impeccable/review', target);
     await fs.mkdir(dir, { recursive: true });
     await page.screenshot({ path: path.join(dir, 'desktop-off.png'), fullPage: true, animations: 'disabled' });
