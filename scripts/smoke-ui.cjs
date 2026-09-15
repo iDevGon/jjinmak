@@ -3,6 +3,21 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 
+async function waitForWindowVisibility(app, expected, timeoutMs) {
+  await app.evaluate(async ({ BrowserWindow }, { expected: visible, timeoutMs: timeout }) => {
+    const deadline = Date.now() + timeout;
+    while (true) {
+      const window = BrowserWindow.getAllWindows()[0];
+      if (!window) throw new Error(`BrowserWindow disappeared while waiting for visibility ${visible}.`);
+      if (window.isVisible() === visible) return;
+      if (Date.now() >= deadline) {
+        throw new Error(`Timed out after ${timeout} ms waiting for BrowserWindow visibility ${visible}.`);
+      }
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }, { expected, timeoutMs });
+}
+
 (async () => {
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -18,6 +33,14 @@ const fs = require('node:fs/promises');
     const state = await page.evaluate(() => window.jjinmak.getState());
     assert.equal(state.platform, target === 'macos' ? 'darwin' : 'win32');
     assert.equal(state.demo, true);
+    assert.equal(await app.evaluate(({ app }) => app.__jjinmakTrayReady), true);
+    assert.equal(state.startupEnabled, false);
+    await page.locator('#startup').check();
+    await page.waitForFunction(async () => (await window.jjinmak.getState()).startupEnabled === true);
+    assert.equal(await page.locator('#startup').isChecked(), true);
+    await page.locator('#startup').uncheck();
+    await page.waitForFunction(async () => (await window.jjinmak.getState()).startupEnabled === false);
+    assert.equal(await page.locator('#startup').isChecked(), false);
     const dir = path.join(__dirname, '../.impeccable/review', target);
     await fs.mkdir(dir, { recursive: true });
     await page.screenshot({ path: path.join(dir, 'desktop-off.png'), fullPage: true, animations: 'disabled' });
@@ -54,6 +77,13 @@ const fs = require('node:fs/promises');
     await page.locator('summary').click();
     await page.screenshot({ path: path.join(dir, 'compact.png'), fullPage: true, animations: 'disabled' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+    await waitForWindowVisibility(app, false, 5000);
+    assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isDestroyed()), false);
+    assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), false);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].show());
+    await waitForWindowVisibility(app, true, 5000);
+    assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), true);
     assert.deepEqual(errors, []);
     console.log(`PASS (${target}): sandbox, toggles, game completion, shutdown confirmation/cancel, compact layout.`);
   } finally { await app.close(); }

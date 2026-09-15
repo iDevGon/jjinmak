@@ -1,8 +1,15 @@
-const { app, BrowserWindow, ipcMain, protocol, net, session, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, session, nativeTheme, Menu, Tray, nativeImage } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { Controller } = require('@jjinmak/core/controller');
 const { LcuClient, discoverCredentials } = require('@jjinmak/core/lcu');
+const { interceptWindowClose } = require('./window-policy.cjs');
+const { getStartupEnabled, setStartupEnabled } = require('./startup.cjs');
+
+// Electron 44 reliably supports PNG/JPEG data URLs for nativeImage.
+const TRAY_ICON_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAN0lEQVR4nGNgoCX48PXzfxAeNYDKBlBkIM1cRZLJtDMAJkmMAeSZTqwrYYpwYUIuxGkQ0RpJBQAFVaUeP1CEGQAAAABJRU5ErkJggg==';
+// Retina displays use the 32x32 PNG representation at a 2x scale factor.
+const TRAY_ICON_2X_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAa0lEQVR4nO3QOwrAIBAEUO9/WiGkjqSwSaPOh2wxA1ays49tLSHS7+t5XwABBBBAaYAVuSqf/79eqhSgBKI+wKENAAYoEFCfCwANMQiqRw2ghpECyRW/JTtFyMxx4cmjlrMIyXIEIl+cODMAACws5hOthJ4AAAAASUVORK5CYII=';
 
 function startDesktop({ platform, actions, discoverProcesses }) {
 app.setName('찐막');
@@ -19,19 +26,72 @@ let controller;
 let pollTimer;
 let tickTimer;
 let stopping = false;
+let quitting = false;
+let tray;
+let startupEnabled = false;
 let countdownVisible = false;
 let demoGame = 100;
 let demoSnapshot = { phase: 'Lobby', gameId: null, supported: true };
 const lcu = new LcuClient({ discover: () => discoverCredentials(discoverProcesses) });
 
-function state() { return { ...controller.state(), demo, platform }; }
+function launchOptions() {
+  return app.isPackaged ? {} : { path: process.execPath, args: [app.getAppPath()] };
+}
+function readStartupEnabled() {
+  return getStartupEnabled({ demo, getLoginItemSettings: () => app.getLoginItemSettings() });
+}
+function writeStartupEnabled(enabled) {
+  startupEnabled = setStartupEnabled({
+    demo,
+    enabled,
+    launchOptions: launchOptions(),
+    setLoginItemSettings: (options) => app.setLoginItemSettings(options),
+    getLoginItemSettings: () => app.getLoginItemSettings(),
+  });
+  return startupEnabled;
+}
+function state() { return { ...controller.state(), demo, platform, startupEnabled }; }
+function showWindow() {
+  if (!window || window.isDestroyed()) return;
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
+}
+function createTrayImage() {
+  const image = nativeImage.createFromDataURL(TRAY_ICON_DATA_URL);
+  image.addRepresentation({ scaleFactor: 2, dataURL: TRAY_ICON_2X_DATA_URL });
+  if (platform === 'darwin') image.setTemplateImage(true);
+  return image;
+}
+function createTray() {
+  let createdTray;
+  try {
+    createdTray = new Tray(createTrayImage());
+    createdTray.setToolTip('찐막');
+    createdTray.setContextMenu(Menu.buildFromTemplate([
+      { label: '찐막 열기', click: showWindow },
+      { type: 'separator' },
+      { label: '앱 종료', click: () => { quitting = true; app.quit(); } },
+    ]));
+    createdTray.on('click', showWindow);
+    tray = createdTray;
+    return createdTray;
+  } catch (error) {
+    if (createdTray) {
+      try {
+        createdTray.destroy();
+      } catch {}
+    }
+    tray = null;
+    console.error(`트레이를 만들지 못했습니다: ${error.message}`);
+    return null;
+  }
+}
 function sendState() {
   if (!window || window.isDestroyed()) return;
   const value = state();
   if (value.seconds !== null && !countdownVisible) {
-    if (window.isMinimized()) window.restore();
-    window.show();
-    window.focus();
+    showWindow();
     window.flashFrame(true);
   }
   if (value.seconds === null && countdownVisible) window.flashFrame(false);
@@ -47,8 +107,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (window?.isMinimized()) window.restore();
-    window?.focus();
+    showWindow();
   });
   app.whenReady().then(async () => {
     nativeTheme.themeSource = 'dark';
@@ -65,6 +124,7 @@ if (!app.requestSingleInstanceLock()) {
       closeGames: (options) => demo ? Promise.resolve() : actions.closeGames(options),
       shutdown: () => demo ? Promise.resolve() : actions.shutdown(),
     });
+    startupEnabled = readStartupEnabled();
     controller.on('change', sendState);
     ipcMain.handle('get-state', (event) => { trusted(event); return state(); });
     ipcMain.handle('set-armed', async (event, enabled) => {
@@ -74,6 +134,11 @@ if (!app.requestSingleInstanceLock()) {
       return state();
     });
     ipcMain.handle('set-options', (event, options) => { trusted(event); controller.setOptions(options); return state(); });
+    ipcMain.handle('set-startup', (event, enabled) => {
+      trusted(event);
+      writeStartupEnabled(enabled);
+      return state();
+    });
     ipcMain.handle('cancel-shutdown', (event) => { trusted(event); controller.cancelShutdown(); return state(); });
     ipcMain.handle('demo-event', async (event, kind) => {
       trusted(event);
@@ -93,6 +158,10 @@ if (!app.requestSingleInstanceLock()) {
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
     });
     window.setMenu(null);
+    window.on('close', (event) => interceptWindowClose({ event, window, quitting }));
+    createTray();
+    if (demo) app.__jjinmakTrayReady = Boolean(tray);
+    app.on('activate', showWindow);
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event) => event.preventDefault());
     window.webContents.on('will-attach-webview', (event) => event.preventDefault());
@@ -107,11 +176,14 @@ if (!app.requestSingleInstanceLock()) {
     tickTimer = setInterval(() => void controller.tick(), 250);
   }).catch((error) => { console.error('앱을 시작하지 못했습니다:', error.message); app.quit(); });
 }
-app.on('window-all-closed', () => app.quit());
 app.on('before-quit', () => {
+  quitting = true;
   stopping = true;
   clearTimeout(pollTimer);
   clearInterval(tickTimer);
+  if (demo) app.__jjinmakTrayReady = false;
+  tray?.destroy();
+  tray = null;
   controller?.disarm();
   controller?.cancelShutdown();
   actions.dispose?.();

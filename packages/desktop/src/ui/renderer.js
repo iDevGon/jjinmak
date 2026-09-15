@@ -19,6 +19,8 @@ function render(state) {
   text('button-caption', pending ? 'PC 종료 대기 중' : state.executing ? '마무리하는 중' : state.arming ? '연결 확인 중 · 취소' : state.armed ? '켜짐 · 눌러서 해제' : '눌러서 켜기');
   $('discord').checked = state.options.discord;
   $('shutdown').checked = state.options.shutdown;
+  $('startup').checked = state.startupEnabled;
+  $('startup').disabled = busy;
   $('discord').disabled = locked;
   $('shutdown').disabled = locked;
   $('platform-shutdown-note').hidden = state.platform !== 'darwin';
@@ -79,6 +81,10 @@ $('shutdown').addEventListener('change', () => {
     $('shutdown').checked = false;
     dialog.showModal();
   } else void request(() => api.setOptions({ ...current.options, shutdown: false }));
+});
+$('startup').addEventListener('change', () => {
+  const startupEnabled = $('startup').checked;
+  void request(() => api.setStartup(startupEnabled));
 });
 $('decline-shutdown').addEventListener('click', () => dialog.close());
 $('confirm-shutdown').addEventListener('click', () => {
