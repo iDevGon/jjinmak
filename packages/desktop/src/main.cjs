@@ -4,6 +4,7 @@ const { pathToFileURL } = require('node:url');
 const { Controller } = require('@jjinmak/core/controller');
 const { LcuClient, discoverCredentials } = require('@jjinmak/core/lcu');
 const { interceptWindowClose } = require('./window-policy.cjs');
+const { getStartupEnabled, setStartupEnabled } = require('./startup.cjs');
 
 // Electron 44 reliably supports PNG/JPEG data URLs for nativeImage.
 const TRAY_ICON_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAN0lEQVR4nGNgoCX48PXzfxAeNYDKBlBkIM1cRZLJtDMAJkmMAeSZTqwrYYpwYUIuxGkQ0RpJBQAFVaUeP1CEGQAAAABJRU5ErkJggg==';
@@ -27,12 +28,29 @@ let tickTimer;
 let stopping = false;
 let quitting = false;
 let tray;
+let startupEnabled = false;
 let countdownVisible = false;
 let demoGame = 100;
 let demoSnapshot = { phase: 'Lobby', gameId: null, supported: true };
 const lcu = new LcuClient({ discover: () => discoverCredentials(discoverProcesses) });
 
-function state() { return { ...controller.state(), demo, platform }; }
+function launchOptions() {
+  return app.isPackaged ? {} : { path: process.execPath, args: [app.getAppPath()] };
+}
+function readStartupEnabled() {
+  return getStartupEnabled({ demo, getLoginItemSettings: () => app.getLoginItemSettings() });
+}
+function writeStartupEnabled(enabled) {
+  startupEnabled = setStartupEnabled({
+    demo,
+    enabled,
+    launchOptions: launchOptions(),
+    setLoginItemSettings: (options) => app.setLoginItemSettings(options),
+    getLoginItemSettings: () => app.getLoginItemSettings(),
+  });
+  return startupEnabled;
+}
+function state() { return { ...controller.state(), demo, platform, startupEnabled }; }
 function showWindow() {
   if (!window || window.isDestroyed()) return;
   if (window.isMinimized()) window.restore();
@@ -106,6 +124,7 @@ if (!app.requestSingleInstanceLock()) {
       closeGames: (options) => demo ? Promise.resolve() : actions.closeGames(options),
       shutdown: () => demo ? Promise.resolve() : actions.shutdown(),
     });
+    startupEnabled = readStartupEnabled();
     controller.on('change', sendState);
     ipcMain.handle('get-state', (event) => { trusted(event); return state(); });
     ipcMain.handle('set-armed', async (event, enabled) => {
@@ -115,6 +134,11 @@ if (!app.requestSingleInstanceLock()) {
       return state();
     });
     ipcMain.handle('set-options', (event, options) => { trusted(event); controller.setOptions(options); return state(); });
+    ipcMain.handle('set-startup', (event, enabled) => {
+      trusted(event);
+      writeStartupEnabled(enabled);
+      return state();
+    });
     ipcMain.handle('cancel-shutdown', (event) => { trusted(event); controller.cancelShutdown(); return state(); });
     ipcMain.handle('demo-event', async (event, kind) => {
       trusted(event);
