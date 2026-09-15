@@ -1,0 +1,11 @@
+{
+  "name": "@jjinmak/core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/core.cjs",
+  "exports": {
+    ".": "./src/core.cjs",
+    "./controller": "./src/controller.cjs",
+    "./lcu": "./src/lcu.cjs"
+  }
+}

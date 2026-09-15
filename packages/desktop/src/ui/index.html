@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>찐막</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="renderer.js" defer></script>
+</head>
+<body>
+  <!-- THESIS: One deliberate last-game switch. OWN-WORLD: User-approved dark gaming console, graphite, mint activation, orange power-down. STORY: Choose options, arm the next game, leave after its confirmed end. FIRST VIEWPORT: Compact masthead, centered 228px round button, live status, two option rows. FORM: User-pinned dark gaming style overrides seed 5ffa925d; code-led functional desktop utility. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+  <main class="app">
+    <header class="masthead">
+      <span class="wordmark">찐막<span class="wordmark-dot" aria-hidden="true"></span></span>
+      <span class="connection" id="connection"><span class="dot" aria-hidden="true"></span><span id="connection-text">연결 확인 중</span></span>
+    </header>
+
+    <aside id="demo-banner" class="demo-banner" hidden>모의 실행 · 실제 앱과 PC는 종료되지 않아요.</aside>
+
+    <section class="hero" aria-label="찐막 활성화">
+      <h1>이번 판이,<br>오늘의 마지막.</h1>
+      <div class="button-shell">
+        <button id="main-toggle" class="main-toggle" type="button" aria-pressed="false" aria-describedby="status-detail" disabled>
+          <svg class="power-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v9M6.4 5.9a8 8 0 1 0 11.2 0"/></svg>
+          <span class="button-title">찐막</span>
+          <span id="button-caption" class="button-caption">켜기</span>
+        </button>
+      </div>
+      <div class="game-status" aria-live="polite" aria-atomic="true">
+        <p id="status-title">연결을 확인하고 있어요</p>
+        <p id="status-detail">잠시만 기다려 주세요.</p>
+      </div>
+    </section>
+
+    <section id="countdown" class="countdown" aria-label="PC 종료 예약" hidden>
+      <div><strong><span id="seconds">30</span>초 후 PC 종료</strong><p>저장하지 않은 작업을 확인해 주세요.</p></div>
+      <button id="cancel-shutdown" class="secondary-button" type="button">종료 취소</button>
+    </section>
+
+    <section class="options" aria-labelledby="options-title">
+      <h2 id="options-title">게임이 끝나면</h2>
+      <label class="option-row" for="discord">
+        <svg class="option-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 6.5C7 5.5 9 5 12 5s5 .5 7 1.5L21 17l-5 2-1-2H9l-1 2-5-2L5 6.5Z"/><path d="M8 14h.01M16 14h.01" class="eyes"/><path d="M9 17h6"/></svg>
+        <span class="option-copy"><strong>디스코드도 종료</strong><span>음성 채팅도 함께 마무리해요</span></span>
+        <input id="discord" type="checkbox" role="switch" disabled><span class="switch" aria-hidden="true"></span>
+      </label>
+      <label class="option-row power-option" for="shutdown">
+        <svg class="option-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4m-4 0h8M12 7v3"/></svg>
+        <span class="option-copy"><strong>진짜 찐막</strong><span>30초 뒤 PC까지 종료해요</span></span>
+        <input id="shutdown" type="checkbox" role="switch" disabled><span class="switch" aria-hidden="true"></span>
+      </label>
+      <p id="options-hint" class="options-hint">옵션을 고른 뒤 찐막을 켜 주세요.</p>
+    </section>
+
+    <p id="error" class="error" role="alert" hidden></p>
+    <footer>최소화하면 계속 지켜봐요.<br>창을 닫으면 찐막도 종료돼요.</footer>
+
+    <details id="demo-controls" class="demo-controls" hidden>
+      <summary>모의 게임으로 테스트하기</summary>
+      <div class="demo-buttons">
+        <button type="button" data-demo="lobby">로비</button>
+        <button type="button" data-demo="start">게임 시작</button>
+        <button type="button" data-demo="end">게임 종료</button>
+        <button type="button" data-demo="disconnect">연결 끊김</button>
+      </div>
+      <p>찐막 켜기 → 게임 시작 → 게임 종료 순서로 눌러 보세요.</p>
+    </details>
+  </main>
+
+  <dialog id="shutdown-dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+    <h2 id="dialog-title">PC까지 종료할까요?</h2>
+    <p id="dialog-description">게임이 끝나면 30초 후 PC를 종료해요. 열려 있는 프로그램도 강제로 닫히므로 저장하지 않은 작업은 사라질 수 있어요.</p>
+    <p>종료 전 30초 동안 취소할 수 있어요.</p>
+    <p id="platform-shutdown-note" hidden>Mac은 종료 시 관리자 승인 창이 나타날 수 있어요. 승인해야 시스템 종료가 진행돼요.</p>
+    <div class="dialog-actions">
+      <button id="decline-shutdown" class="secondary-button" type="button" autofocus>아니요</button>
+      <button id="confirm-shutdown" class="warning-button" type="button">진짜 찐막 켜기</button>
+    </div>
+  </dialog>
+</body>
+</html>

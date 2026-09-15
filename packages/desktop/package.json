@@ -1,0 +1,7 @@
+{
+  "name": "@jjinmak/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.cjs",
+  "dependencies": { "@jjinmak/core": "0.1.0" }
+}

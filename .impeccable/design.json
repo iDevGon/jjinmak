@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-15T00:00:00+09:00",
+  "title": "Design System: 찐막",
+  "extensions": {
+    "colorMeta": {
+      "mint": { "role": "primary", "displayName": "Activation mint", "tonalRamp": ["oklch(15% .08 160)", "oklch(26% .08 160)", "oklch(38% .08 160)", "oklch(49% .08 160)", "oklch(61% .08 160)", "oklch(72% .08 160)", "oklch(84% .08 160)", "oklch(95% .08 160)"] },
+      "orange": { "role": "secondary", "displayName": "Power orange", "tonalRamp": ["oklch(15% .08 55)", "oklch(26% .08 55)", "oklch(38% .08 55)", "oklch(49% .08 55)", "oklch(61% .08 55)", "oklch(72% .08 55)", "oklch(84% .08 55)", "oklch(95% .08 55)"] },
+      "bg": { "role": "neutral", "displayName": "Graphite canvas", "tonalRamp": ["oklch(15% .01 190)", "oklch(26% .01 190)", "oklch(38% .01 190)", "oklch(49% .01 190)", "oklch(61% .01 190)", "oklch(72% .01 190)", "oklch(84% .01 190)", "oklch(95% .01 190)"] }
+    },
+    "typographyMeta": { "display": { "displayName": "Central Korean toggle", "purpose": "The dominant 찐막 action label." } },
+    "shadows": [{ "name": "toggle-depth", "value": "0 12px 28px #00000030", "purpose": "Soft depth beneath the main round switch." }],
+    "motion": [
+      { "name": "toggle-transition", "value": ".22s ease-out", "purpose": "Toggle background, text, ring, and press transform." },
+      { "name": "switch-transition", "value": ".2s ease-out", "purpose": "Switch knob translation; track uses .2s default ease." },
+      { "name": "press-scale", "value": "scale(.97)", "purpose": "Enabled main-toggle press feedback." },
+      { "name": "reduced-motion", "value": "transition: none !important", "purpose": "Applied to every element and after pseudo-element for prefers-reduced-motion: reduce." }
+    ],
+    "breakpoints": [{ "name": "compact-desktop", "value": "440px" }]
+  },
+  "components": [
+    {
+      "name": "Main toggle", "kind": "button", "refersTo": "main-toggle", "description": "Off state of the central last-game action.",
+      "html": "<button class=\"ds-toggle\" aria-pressed=\"false\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 3v9M6.4 5.9a8 8 0 1 0 11.2 0\"/></svg><span class=\"ds-title\">찐막</span><span class=\"ds-caption\">눌러서 켜기</span></button>",
+      "css": ".ds-toggle{width:228px;height:228px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:50%;background:#283335;color:#c4d1ce;box-shadow:0 12px 28px #00000030;font-family:'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;cursor:pointer;transition:background .22s ease-out,color .22s ease-out,transform .22s ease-out}.ds-title{font-size:64px;font-weight:900;letter-spacing:-.04em;line-height:1.2}.ds-caption{font-size:12px;margin-top:6px}.ds-toggle:hover:not(:disabled){background:#334345}.ds-toggle:active:not(:disabled){transform:scale(.97)}.ds-toggle:focus-visible{outline:3px solid var(--mint,#8be5bc);outline-offset:5px}.ds-toggle:disabled{cursor:default}@media(prefers-reduced-motion:reduce){.ds-toggle{transition:none}}"
+    },
+    {
+      "name": "Secondary button", "kind": "button", "refersTo": "button-secondary", "description": "Countdown cancellation and neutral dialog choice.",
+      "html": "<button class=\"ds-secondary\">종료 취소</button>",
+      "css": ".ds-secondary{padding:11px 14px;border-radius:8px;font:12px 'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;border:1px solid #667471;background:transparent;color:var(--text,#f0f5f3);white-space:nowrap;min-height:40px;cursor:pointer}.ds-secondary:hover{background:#ffffff12}.ds-secondary:focus-visible{outline:3px solid var(--mint,#8be5bc);outline-offset:5px}"
+    },
+    {
+      "name": "Warning button", "kind": "button", "refersTo": "button-warning", "description": "Confirms the PC shutdown option inside its explanation dialog.",
+      "html": "<button class=\"ds-warning\">진짜 찐막 켜기</button>",
+      "css": ".ds-warning{padding:11px 14px;border-radius:8px;font:700 12px 'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;border:1px solid var(--orange,#ffb080);background:var(--orange,#ffb080);color:#412715;white-space:nowrap;min-height:40px;cursor:pointer}.ds-warning:hover{background:#ffc29e}.ds-warning:focus-visible{outline:3px solid var(--mint,#8be5bc);outline-offset:5px}"
+    },
+    {
+      "name": "Option switch", "kind": "input", "description": "Native checkbox semantics and a sliding mint state indicator.",
+      "html": "<label class=\"ds-option\"><span>디스코드도 종료</span><input type=\"checkbox\" role=\"switch\"><span class=\"ds-switch\" aria-hidden=\"true\"></span></label>",
+      "css": ".ds-option{position:relative;display:flex;align-items:center;gap:13px;padding:17px 0;border-bottom:1px solid var(--line,#344143);color:var(--text,#f0f5f3);font:14px 'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;cursor:pointer}.ds-option>span:first-child{flex:1}.ds-option input{position:absolute;right:0;width:44px;height:44px;opacity:0;margin:0;cursor:pointer}.ds-switch{width:38px;height:22px;background:#4a5859;border-radius:20px;pointer-events:none;transition:background .2s}.ds-switch:after{content:'';display:block;width:16px;height:16px;background:#e1e8e6;border-radius:50%;margin:3px;transition:transform .2s ease-out}.ds-option input:checked+.ds-switch{background:var(--mint,#8be5bc)}.ds-option input:checked+.ds-switch:after{transform:translateX(16px);background:#17432f}.ds-option input:focus-visible+.ds-switch{outline:3px solid var(--mint,#8be5bc);outline-offset:5px}.ds-option:has(input:disabled),.ds-option input:disabled{cursor:default}@media(prefers-reduced-motion:reduce){.ds-switch,.ds-switch:after{transition:none}}"
+    },
+    {
+      "name": "Countdown", "kind": "card", "refersTo": "countdown", "description": "Inline shutdown timer with cancellation in the same surface.",
+      "html": "<section class=\"ds-countdown\"><div><strong><span class=\"ds-seconds\">30</span>초 후 PC 종료</strong><p>저장하지 않은 작업을 확인해 주세요.</p></div><button class=\"ds-cancel\">종료 취소</button></section>",
+      "css": ".ds-countdown{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;background:#34271f;border-radius:12px;color:var(--orange,#ffb080);font-family:'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif}.ds-countdown strong{font-size:16px}.ds-seconds{font-variant-numeric:tabular-nums}.ds-countdown p{font-size:11px;line-height:1.5;margin:6px 0 0}.ds-cancel{padding:11px 14px;border-radius:8px;font:12px 'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;border:1px solid #667471;background:transparent;color:var(--text,#f0f5f3);white-space:nowrap;min-height:40px;cursor:pointer}.ds-cancel:hover{background:#ffffff12}.ds-cancel:focus-visible{outline:3px solid var(--mint,#8be5bc);outline-offset:5px}@media(max-width:440px){.ds-countdown{padding:12px}.ds-countdown strong{font-size:15px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Dark gaming console",
+    "overview": "The user's selected dark gaming style uses graphite surfaces, a large circular switch, mint activation, and orange PC shutdown. The shared interface lives in packages/desktop/src/ui. The monorepo adds macOS and Windows entry points without changing the visual direction. The macOS shutdown dialog explains administrator authorization. Real-game detection and shutdown still require verification on both operating systems.",
+    "keyCharacteristics": ["One dominant circular action.", "Graphite surfaces with functional mint and orange states.", "Korean system typography and inline line icons.", "Short status explanations beside explicit cancellation controls."],
+    "rules": [{ "name": "The State Color Rule", "body": "Keep mint and orange tied to the implemented activation and shutdown meanings; accompany both with text.", "section": "colors" }],
+    "dos": ["Do preserve the Korean name and dominant round toggle.", "Do show state and disabled explanations in readable Korean text.", "Do retain keyboard focus and accessible switch/button semantics.", "Do keep cancellation visible and focusable during the countdown."],
+    "donts": ["Don't replace the user-selected dark gaming direction with the random seed.", "Don't use orange for ordinary activation without PC shutdown context.", "Don't treat simulation screenshots as Windows functional verification."]
+  }
+}
