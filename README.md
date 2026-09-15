@@ -4,15 +4,15 @@
 
 ## 다운로드
 
-[v0.2.0 프리릴리스](https://github.com/iDevGon/jjinmak/releases/tag/v0.2.0)에서 운영체제와 CPU에 맞는 ZIP을 내려받으세요.
+[v0.3.0 프리릴리스](https://github.com/iDevGon/jjinmak/releases/tag/v0.3.0)에서 운영체제와 CPU에 맞는 ZIP을 내려받으세요.
 
 | 환경 | 다운로드 |
 |---|---|
-| Windows 10/11 x64 | [Windows ZIP](https://github.com/iDevGon/jjinmak/releases/download/v0.2.0/jjinmak-0.2.0-windows-x64.zip) |
-| Mac Apple Silicon (M 시리즈) | [Mac arm64 ZIP](https://github.com/iDevGon/jjinmak/releases/download/v0.2.0/jjinmak-0.2.0-macos-arm64.zip) |
-| Mac Intel | [Mac x64 ZIP](https://github.com/iDevGon/jjinmak/releases/download/v0.2.0/jjinmak-0.2.0-macos-x64.zip) |
+| Windows 10/11 x64 | [Windows ZIP](https://github.com/iDevGon/jjinmak/releases/download/v0.3.0/jjinmak-0.3.0-windows-x64.zip) |
+| Mac Apple Silicon (M 시리즈) | [Mac arm64 ZIP](https://github.com/iDevGon/jjinmak/releases/download/v0.3.0/jjinmak-0.3.0-macos-arm64.zip) |
+| Mac Intel | [Mac x64 ZIP](https://github.com/iDevGon/jjinmak/releases/download/v0.3.0/jjinmak-0.3.0-macos-x64.zip) |
 
-[SHA-256 체크섬](https://github.com/iDevGon/jjinmak/releases/download/v0.2.0/SHA256SUMS.txt)
+[SHA-256 체크섬](https://github.com/iDevGon/jjinmak/releases/download/v0.3.0/SHA256SUMS.txt)
 
 초기 테스트용 릴리스입니다. 실제 롤 연동·앱 강제 종료·PC 종료는 실환경 검증 전이며,
 Windows 배포자 서명과 Mac Developer ID 서명·공증은 포함하지 않습니다.
