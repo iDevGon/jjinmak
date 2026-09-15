@@ -24,6 +24,7 @@ try {
     dir: staging, name: '찐막', executableName: '찐막', platform, arch,
     electronVersion: manifest.devDependencies.electron,
     out: path.join(root, 'release', target),
+    icon: path.join(root, 'assets', platform === 'win32' ? 'jjinmak.ico' : 'jjinmak.icns'),
     appBundleId: 'com.idevgon.jjinmak',
     asar: true, overwrite: true, prune: false,
     ...(platform === 'win32'

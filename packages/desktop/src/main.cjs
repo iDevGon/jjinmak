@@ -87,7 +87,8 @@ if (!app.requestSingleInstanceLock()) {
       return state();
     });
     window = new BrowserWindow({
-      title: '찐막', width: 480, height: 820, minWidth: 420, minHeight: 740,
+      title: '찐막', icon: path.join(__dirname, 'ui', 'app-icon.png'),
+      width: 480, height: 820, minWidth: 420, minHeight: 740,
       backgroundColor: '#121819', show: false, autoHideMenuBar: true,
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
     });
