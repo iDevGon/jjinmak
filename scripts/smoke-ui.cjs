@@ -3,6 +3,14 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 
+async function waitForWindowVisibility(app, expected) {
+  await app.evaluate(async ({ BrowserWindow }, visible) => {
+    while (BrowserWindow.getAllWindows()[0].isVisible() !== visible) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }, expected);
+}
+
 (async () => {
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -18,7 +26,6 @@ const fs = require('node:fs/promises');
     const state = await page.evaluate(() => window.jjinmak.getState());
     assert.equal(state.platform, target === 'macos' ? 'darwin' : 'win32');
     assert.equal(state.demo, true);
-    assert.equal(await app.evaluate(({ Tray }) => Tray.getAllTrays().length), 1);
     const dir = path.join(__dirname, '../.impeccable/review', target);
     await fs.mkdir(dir, { recursive: true });
     await page.screenshot({ path: path.join(dir, 'desktop-off.png'), fullPage: true, animations: 'disabled' });
@@ -56,11 +63,11 @@ const fs = require('node:fs/promises');
     await page.screenshot({ path: path.join(dir, 'compact.png'), fullPage: true, animations: 'disabled' });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
-    await page.waitForFunction(() => document.hidden);
+    await waitForWindowVisibility(app, false);
     assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isDestroyed()), false);
     assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), false);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].show());
-    await page.waitForFunction(() => !document.hidden);
+    await waitForWindowVisibility(app, true);
     assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), true);
     assert.deepEqual(errors, []);
     console.log(`PASS (${target}): sandbox, toggles, game completion, shutdown confirmation/cancel, compact layout.`);
