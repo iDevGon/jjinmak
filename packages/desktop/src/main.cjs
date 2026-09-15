@@ -16,9 +16,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'jjinmak', privileges: { standar
 
 let window;
 let controller;
-let pollTimer;
 let tickTimer;
-let stopping = false;
 let countdownVisible = false;
 let demoGame = 100;
 let demoSnapshot = { phase: 'Lobby', gameId: null, supported: true };
@@ -83,7 +81,7 @@ if (!app.requestSingleInstanceLock()) {
       else if (kind === 'disconnect') demoSnapshot = null;
       else if (kind === 'lobby') demoSnapshot = { phase: 'Lobby', gameId: null, supported: true };
       else throw new Error('잘못된 모의 이벤트예요.');
-      await controller.poll();
+      controller.handleSnapshot(demoSnapshot);
       return state();
     });
     window = new BrowserWindow({
@@ -97,19 +95,14 @@ if (!app.requestSingleInstanceLock()) {
     window.webContents.on('will-attach-webview', (event) => event.preventDefault());
     window.once('ready-to-show', () => window.show());
     await window.loadURL('jjinmak://app/index.html');
-    async function poll() {
-      if (stopping) return;
-      await controller.poll();
-      if (!stopping) pollTimer = setTimeout(poll, controller.connected ? 1500 : 4000);
-    }
-    void poll();
+    if (demo) controller.handleSnapshot(demoSnapshot);
+    else lcu.watch((snapshot) => controller.handleSnapshot(snapshot));
     tickTimer = setInterval(() => void controller.tick(), 250);
   }).catch((error) => { console.error('앱을 시작하지 못했습니다:', error.message); app.quit(); });
 }
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', () => {
-  stopping = true;
-  clearTimeout(pollTimer);
+  lcu.dispose();
   clearInterval(tickTimer);
   controller?.disarm();
   controller?.cancelShutdown();

@@ -98,3 +98,60 @@ test('a missing session is disconnected, not a valid baseline', async () => {
   await f.controller.poll();
   assert.equal(f.controller.state().connected, false);
 });
+
+test('one end event needs a fresh API confirmation; duplicate events cannot close early', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const f = setup();
+  await f.controller.arm();
+  f.controller.handleSnapshot(snapshot('InProgress', '1'));
+  f.set(snapshot('EndOfGame', '1'));
+  f.controller.handleSnapshot(snapshot('EndOfGame', '1'));
+  f.controller.handleSnapshot(snapshot('EndOfGame', '1'));
+  assert.equal(f.calls.length, 0);
+  t.mock.timers.tick(1500);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(f.calls.length, 1);
+});
+
+test('disconnect during end confirmation ignores the stale response', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const f = setup();
+  await f.controller.arm();
+  f.controller.handleSnapshot(snapshot('InProgress', '1'));
+  let resolve;
+  f.controller.read = () => new Promise((r) => { resolve = r; });
+  f.controller.handleSnapshot(snapshot('EndOfGame', '1'));
+  t.mock.timers.tick(1500);
+  f.controller.handleSnapshot(null);
+  resolve(snapshot('EndOfGame', '1'));
+  await new Promise((r) => setImmediate(r));
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.controller.connected, false);
+});
+
+test('disarm cancels event confirmation', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const f = setup();
+  await f.controller.arm();
+  f.controller.handleSnapshot(snapshot('InProgress', '1'));
+  f.controller.handleSnapshot(snapshot('EndOfGame', '1'));
+  f.controller.disarm();
+  t.mock.timers.tick(1500);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(f.calls.length, 0);
+});
+
+test('end confirmation for a different game or non-ended phase never closes apps', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  for (const response of [snapshot('EndOfGame', '2'), snapshot('Lobby'), snapshot('InProgress', '1'), null]) {
+    const f = setup();
+    await f.controller.arm();
+    f.controller.handleSnapshot(snapshot('InProgress', '1'));
+    f.controller.handleSnapshot(snapshot('EndOfGame', '1'));
+    f.set(response);
+    t.mock.timers.tick(1500);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(f.calls.length, 0);
+    f.controller.disarm();
+  }
+});

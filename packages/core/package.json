@@ -7,5 +7,8 @@
     ".": "./src/core.cjs",
     "./controller": "./src/controller.cjs",
     "./lcu": "./src/lcu.cjs"
+  },
+  "dependencies": {
+    "ws": "8.21.3"
   }
 }

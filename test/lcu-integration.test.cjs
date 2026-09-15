@@ -1,0 +1,64 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const https = require('node:https');
+const { once } = require('node:events');
+const { mkdtempSync, readFileSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+const { WebSocketServer } = require('ws');
+const { LcuClient } = require('@jjinmak/core/lcu');
+const { Controller } = require('@jjinmak/core/controller');
+
+test('local TLS websocket authenticates, tracks one game and confirms its end over HTTPS', { timeout: 10000 }, async (t) => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'jjinmak-lcu-test-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', path.join(dir, 'key.pem'), '-out', path.join(dir, 'cert.pem'), '-days', '1', '-subj', '/CN=localhost'], { stdio: 'ignore' });
+  let phase = 'Lobby';
+  let reads = 0;
+  const credentials = { token: 'local-test-token' };
+  const auth = `Basic ${Buffer.from(`riot:${credentials.token}`).toString('base64')}`;
+  const value = () => ({ phase, gameData: { gameId: phase === 'Lobby' ? 0 : 123 } });
+  const server = https.createServer({ key: readFileSync(path.join(dir, 'key.pem')), cert: readFileSync(path.join(dir, 'cert.pem')) }, (req, res) => {
+    assert.equal(req.headers.authorization, auth);
+    assert.equal(req.url, '/lol-gameflow/v1/session');
+    reads++;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(value()));
+  });
+  const wss = new WebSocketServer({ server });
+  t.after(() => { for (const socket of wss.clients) socket.terminate(); wss.close(); server.close(); });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  credentials.port = server.address().port;
+  const lcu = new LcuClient({ discover: async () => credentials });
+  let closed = 0;
+  let completed;
+  const done = new Promise((resolve) => { completed = resolve; });
+  const controller = new Controller({ read: () => lcu.read(), closeGames: async () => { closed++; completed(); }, shutdown: async () => assert.fail('unexpected shutdown') });
+  t.after(() => { controller.disarm(); lcu.dispose(); });
+  const connected = once(wss, 'connection');
+  let initial;
+  const initialized = new Promise((resolve) => { initial = resolve; });
+  lcu.watch((snapshot) => { controller.handleSnapshot(snapshot); if (snapshot?.phase === 'Lobby') initial(); });
+  const [socket, request] = await connected;
+  assert.equal(request.headers.authorization, auth);
+  assert.equal(socket.protocol, 'wamp');
+  const [subscription] = await once(socket, 'message');
+  assert.deepEqual(JSON.parse(subscription), [5, 'OnJsonApiEvent']);
+  await initialized;
+  await controller.arm();
+  const send = (next) => {
+    phase = next;
+    socket.send(JSON.stringify([8, 'OnJsonApiEvent', { uri: '/lol-gameflow/v1/session', eventType: 'Update', data: value() }]));
+  };
+  const observed = once(controller, 'change');
+  send('InProgress');
+  await observed;
+  assert.equal(controller.guard.gameId, '123');
+  send('EndOfGame');
+  send('EndOfGame');
+  await done;
+  assert.equal(closed, 1);
+  assert.equal(reads, 3); // Initial connection, activation, and one end confirmation.
+});
