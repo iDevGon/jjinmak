@@ -20,6 +20,7 @@ try {
   for (const name of ['core', 'desktop']) {
     await cp(path.join(root, 'packages', name), path.join(scope, name), { recursive: true, filter: (source) => path.basename(source) !== 'node_modules' });
   }
+  await cp(path.join(root, 'node_modules', 'ws'), path.join(staging, 'node_modules', 'ws'), { recursive: true });
   const outputs = await packager({
     dir: staging, name: '찐막', executableName: '찐막', platform, arch,
     electronVersion: manifest.devDependencies.electron,

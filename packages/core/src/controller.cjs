@@ -18,6 +18,8 @@ class Controller extends EventEmitter {
     this.generation = 0;
     this.inflight = null;
     this.polling = false;
+    this.snapshotRevision = 0;
+    this.confirmTimer = null;
     this.message = '';
     this.error = '';
   }
@@ -44,13 +46,19 @@ class Controller extends EventEmitter {
   }
   async refresh() {
     if (!this.inflight) {
+      const revision = this.snapshotRevision;
       this.inflight = (async () => {
         try {
-          this.snapshot = await this.read();
-          this.connected = this.snapshot !== null;
+          const snapshot = await this.read();
+          if (revision === this.snapshotRevision) {
+            this.snapshot = snapshot;
+            this.connected = snapshot !== null;
+          }
         } catch {
-          this.snapshot = null;
-          this.connected = false;
+          if (revision === this.snapshotRevision) {
+            this.snapshot = null;
+            this.connected = false;
+          }
         }
         return this.snapshot;
       })().finally(() => { this.inflight = null; });
@@ -71,19 +79,45 @@ class Controller extends EventEmitter {
     this.publish();
   }
   disarm() {
+    clearTimeout(this.confirmTimer);
+    this.confirmTimer = null;
     ++this.generation;
     this.arming = false;
     this.guard.disarm();
     this.message = '찐막을 해제했어요.';
     this.publish();
   }
+  handleSnapshot(snapshot) {
+    ++this.snapshotRevision;
+    this.snapshot = snapshot;
+    this.connected = snapshot !== null;
+    // Event duplicates are not independent confirmation of a game's end.
+    this.guard.confirmations = 0;
+    if (!this.arming && !this.executing && this.deadline === null) {
+      this.guard.observe(snapshot);
+      if (this.guard.reason) this.message = this.guard.reason;
+    }
+    if (this.guard.confirmations === 1) {
+      if (this.confirmTimer === null) {
+        this.confirmTimer = setTimeout(() => {
+          this.confirmTimer = null;
+          void this.poll();
+        }, 1500);
+      }
+    } else {
+      clearTimeout(this.confirmTimer);
+      this.confirmTimer = null;
+    }
+    this.publish();
+  }
   async poll() {
     if (this.polling || this.executing || this.deadline !== null) return;
     this.polling = true;
     const generation = this.generation;
+    const revision = this.snapshotRevision;
     try {
       const snapshot = await this.refresh();
-      if (generation !== this.generation || this.arming) return;
+      if (generation !== this.generation || revision !== this.snapshotRevision || this.arming) return;
       const action = this.guard.observe(snapshot);
       if (this.guard.reason) this.message = this.guard.reason;
       if (action) await this.perform(action);
