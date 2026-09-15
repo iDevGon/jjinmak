@@ -135,6 +135,7 @@ if (!app.requestSingleInstanceLock()) {
     window.setMenu(null);
     window.on('close', (event) => interceptWindowClose({ event, window, quitting }));
     createTray();
+    if (demo) app.__jjinmakTrayReady = Boolean(tray);
     app.on('activate', showWindow);
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event) => event.preventDefault());
@@ -155,6 +156,7 @@ app.on('before-quit', () => {
   stopping = true;
   clearTimeout(pollTimer);
   clearInterval(tickTimer);
+  if (demo) app.__jjinmakTrayReady = false;
   tray?.destroy();
   tray = null;
   controller?.disarm();
