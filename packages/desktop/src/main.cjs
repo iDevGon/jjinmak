@@ -1,8 +1,9 @@
-const { app, BrowserWindow, ipcMain, protocol, net, session, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, session, nativeTheme, Menu, Tray, nativeImage } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { Controller } = require('@jjinmak/core/controller');
 const { LcuClient, discoverCredentials } = require('@jjinmak/core/lcu');
+const { interceptWindowClose } = require('./window-policy.cjs');
 
 function startDesktop({ platform, actions, discoverProcesses }) {
 app.setName('찐막');
@@ -19,19 +20,41 @@ let controller;
 let pollTimer;
 let tickTimer;
 let stopping = false;
+let quitting = false;
+let tray;
 let countdownVisible = false;
 let demoGame = 100;
 let demoSnapshot = { phase: 'Lobby', gameId: null, supported: true };
 const lcu = new LcuClient({ discover: () => discoverCredentials(discoverProcesses) });
 
 function state() { return { ...controller.state(), demo, platform }; }
+function showWindow() {
+  if (!window || window.isDestroyed()) return;
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
+}
+function createTrayImage() {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M8 1v6M4.46 3.46a6 6 0 1 0 7.08 0" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  const image = nativeImage.createFromDataURL(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+  if (platform === 'darwin') image.setTemplateImage(true);
+  return image;
+}
+function createTray() {
+  tray = new Tray(createTrayImage());
+  tray.setToolTip('찐막');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: '찐막 열기', click: showWindow },
+    { type: 'separator' },
+    { label: '앱 종료', click: () => { quitting = true; app.quit(); } },
+  ]));
+  tray.on('click', showWindow);
+}
 function sendState() {
   if (!window || window.isDestroyed()) return;
   const value = state();
   if (value.seconds !== null && !countdownVisible) {
-    if (window.isMinimized()) window.restore();
-    window.show();
-    window.focus();
+    showWindow();
     window.flashFrame(true);
   }
   if (value.seconds === null && countdownVisible) window.flashFrame(false);
@@ -47,8 +70,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (window?.isMinimized()) window.restore();
-    window?.focus();
+    showWindow();
   });
   app.whenReady().then(async () => {
     nativeTheme.themeSource = 'dark';
@@ -92,6 +114,9 @@ if (!app.requestSingleInstanceLock()) {
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
     });
     window.setMenu(null);
+    window.on('close', (event) => interceptWindowClose({ event, window, quitting }));
+    createTray();
+    app.on('activate', showWindow);
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event) => event.preventDefault());
     window.webContents.on('will-attach-webview', (event) => event.preventDefault());
@@ -106,11 +131,13 @@ if (!app.requestSingleInstanceLock()) {
     tickTimer = setInterval(() => void controller.tick(), 250);
   }).catch((error) => { console.error('앱을 시작하지 못했습니다:', error.message); app.quit(); });
 }
-app.on('window-all-closed', () => app.quit());
 app.on('before-quit', () => {
+  quitting = true;
   stopping = true;
   clearTimeout(pollTimer);
   clearInterval(tickTimer);
+  tray?.destroy();
+  tray = null;
   controller?.disarm();
   controller?.cancelShutdown();
   actions.dispose?.();
