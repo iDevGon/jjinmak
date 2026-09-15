@@ -1,4 +1,5 @@
 node_modules/
 release/
+.worktrees/
 .impeccable/review/
 .DS_Store
