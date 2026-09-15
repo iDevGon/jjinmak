@@ -8,7 +8,7 @@ const { interceptWindowClose } = require('./window-policy.cjs');
 // Electron 44 reliably supports PNG/JPEG data URLs for nativeImage.
 const TRAY_ICON_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAN0lEQVR4nGNgoCX48PXzfxAeNYDKBlBkIM1cRZLJtDMAJkmMAeSZTqwrYYpwYUIuxGkQ0RpJBQAFVaUeP1CEGQAAAABJRU5ErkJggg==';
 // Retina displays use the 32x32 PNG representation at a 2x scale factor.
-const TRAY_ICON_2X_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAa0lEQVR4nO3QOwrAIBAEUO9/WiGkjqSwSaPOh2wxA1ays49tLSHS7+t5XwABBBBAaYAVuSqf/79eqhSgBKI+wKENAAYoEFCfCwANMQiqRw2ghpECyRW/JtFyMxx4cmjlrMIyXIEIl+cODMAACws5hOthJ4AAAAASUVORK5CYII=';
+const TRAY_ICON_2X_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAa0lEQVR4nO3QOwrAIBAEUO9/WiGkjqSwSaPOh2wxA1ays49tLSHS7+t5XwABBBBAaYAVuSqf/79eqhSgBKI+wKENAAYoEFCfCwANMQiqRw2ghpECyRW/JTtFyMxx4cmjlrMIyXIEIl+cODMAACws5hOthJ4AAAAASUVORK5CYII=';
 
 function startDesktop({ platform, actions, discoverProcesses }) {
 app.setName('찐막');
